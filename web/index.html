@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方块工坊 BlockAtelier</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%237bc47f'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%235fa864'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/jsm/" } }
+</script>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="cube"></span>方块工坊 <small>BlockAtelier</small></div>
+  <div class="hdr-right">
+    <label class="inline">目标版本 <select id="version"></select></label>
+    <span id="provider-badge" class="badge"></span>
+    <button id="btn-settings" class="ghost">模型与渲染设置</button>
+  </div>
+</header>
+
+<main>
+  <!-- 左: 创作输入 -->
+  <section class="panel" id="panel-input">
+    <div class="tabs" id="mode-tabs">
+      <button data-mode="text" class="on">文字 + 参考</button>
+      <button data-mode="model">3D 模型转换</button>
+    </div>
+
+    <div id="mode-text">
+      <label>建筑描述
+        <textarea id="prompt" rows="6" placeholder="例：一座湖边的两层木构茶楼，深色云杉梁柱，青色歇山顶，带回廊和灯笼"></textarea>
+      </label>
+      <label>风格提示 <span class="hint">可选</span>
+        <input id="style" placeholder="中世纪 / 蒸汽朋克 / 现代极简 …">
+      </label>
+      <label>参考图 <span class="hint">概念图、照片、设计图；需要支持看图的模型</span>
+        <div class="drop" id="drop-images">点击或拖入图片</div>
+        <input type="file" id="file-images" accept=".png,.jpg,.jpeg,.webp" multiple hidden>
+        <div class="chips" id="chips-images"></div>
+      </label>
+      <label>参考结构 <span class="hint">从右侧参考库勾选；不选则按关键词自动匹配</span>
+        <div class="chips" id="chips-refs"><span class="muted">参考库为空</span></div>
+      </label>
+    </div>
+
+    <div id="mode-model" hidden>
+      <label>3D 模型文件 <span class="hint">.glb .gltf .obj .stl .ply</span>
+        <div class="drop" id="drop-model">点击或拖入模型</div>
+        <input type="file" id="file-model" accept=".glb,.gltf,.obj,.stl,.ply,.off,.3mf,.dae" hidden>
+      </label>
+      <div class="row">
+        <label>最长边（方块）<input id="vox-size" type="number" min="8" max="256" value="48"></label>
+        <label>朝上的轴
+          <select id="vox-up"><option value="auto">自动</option><option value="y">Y</option><option value="z">Z</option></select>
+        </label>
+      </div>
+      <label>配色用的方块范围 <select id="vox-palette"></select></label>
+      <label class="check"><input type="checkbox" id="vox-solid"> 填充内部（默认只保留外壳）</label>
+      <label>换材质说明 <span class="hint">可选，交给模型把配色映射成指定材质</span>
+        <textarea id="model-prompt" rows="3" placeholder="例：整体做成风化的砂岩遗迹，屋顶用深色板岩"></textarea>
+      </label>
+    </div>
+
+    <div id="size-row">
+      <label>尺寸上限 <span class="hint">东西 × 高 × 南北</span></label>
+      <div class="row three">
+        <input id="size-x" type="number" min="4" max="256" value="32">
+        <input id="size-y" type="number" min="4" max="256" value="32">
+        <input id="size-z" type="number" min="4" max="256" value="32">
+      </div>
+    </div>
+
+    <button id="btn-generate" class="primary">生成</button>
+    <div id="iterate-box" hidden>
+      <div class="sep"></div>
+      <label>在当前作品上修改 <span class="hint">保留原指令，按说明改</span>
+        <textarea id="iterate-prompt" rows="3" placeholder="例：屋顶改成红色，正面加一个带栏杆的阳台"></textarea>
+      </label>
+      <button id="btn-iterate">生成修改版</button>
+    </div>
+  </section>
+
+  <!-- 中: 视图 + 流程 -->
+  <section id="center">
+    <div id="viewport">
+      <canvas id="canvas"></canvas>
+      <div id="vp-empty">还没有作品。在左侧写一段描述，或上传一个 3D 模型。</div>
+      <div id="vp-tools">
+        <button id="vp-reset" class="ghost small">重置视角</button>
+        <button id="vp-spin" class="ghost small">自动旋转</button>
+      </div>
+      <div id="vp-title"></div>
+    </div>
+    <div class="panel" id="detail">
+      <div class="tabs" id="detail-tabs">
+        <button data-tab="flow" class="on">流程</button>
+        <button data-tab="report">校验报告</button>
+        <button data-tab="materials">用料清单</button>
+        <button data-tab="program">建筑指令</button>
+        <button data-tab="renders">渲染与导出</button>
+      </div>
+      <div id="tab-flow" class="tab"><ol id="timeline"><li class="muted">每一步的进展会显示在这里。</li></ol></div>
+      <div id="tab-report" class="tab" hidden></div>
+      <div id="tab-materials" class="tab" hidden></div>
+      <div id="tab-program" class="tab" hidden><pre id="program-json"></pre></div>
+      <div id="tab-renders" class="tab" hidden></div>
+    </div>
+  </section>
+
+  <!-- 右: 作品库 + 参考库 -->
+  <section class="panel" id="panel-library">
+    <div class="tabs" id="lib-tabs">
+      <button data-lib="builds" class="on">作品库</button>
+      <button data-lib="refs">参考库</button>
+    </div>
+    <div id="lib-builds">
+      <div class="row">
+        <input id="lib-q" placeholder="搜索标题 / 描述 / 标签">
+        <button id="lib-fav" class="ghost small" title="只看收藏">★</button>
+      </div>
+      <div id="build-list"></div>
+    </div>
+    <div id="lib-refs" hidden>
+      <p class="hint">放入你收集的 .litematic / .schem / .nbt 或参考图。结构文件会被解析成尺寸和用料摘要，生成时提供给模型。</p>
+      <div class="drop" id="drop-refs">点击或拖入参考文件</div>
+      <input type="file" id="file-refs" accept=".litematic,.schem,.schematic,.nbt,.png,.jpg,.jpeg,.webp" multiple hidden>
+      <label class="check"><input type="checkbox" id="ref-as-build"> 结构文件同时入作品库（可预览、转格式、渲染）</label>
+      <div id="ref-list"></div>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg-settings">
+  <form method="dialog">
+    <h2>模型与渲染设置</h2>
+    <div class="grid2">
+      <label>模型提供方 <select id="cfg-provider"></select></label>
+      <label>模型名 <input id="cfg-model" placeholder="填你账号里可用的模型名"></label>
+      <label class="wide">接口地址 <span class="hint">留空用预设</span><input id="cfg-base" placeholder=""></label>
+      <label class="wide">API Key <span class="hint" id="cfg-key-hint"></span><input id="cfg-key" type="password" placeholder="留空表示不修改" autocomplete="off"></label>
+      <label>校验失败时修复轮数 <input id="cfg-repair" type="number" min="0" max="5"></label>
+      <label>看图自评轮数 <input id="cfg-critique" type="number" min="0" max="3"></label>
+      <label class="check wide"><input type="checkbox" id="cfg-vision"> 模型支持看图（参考图、渲染自评）</label>
+      <label class="wide">SearXNG 地址 <span class="hint">可选，联网找参考</span><input id="cfg-searx" placeholder="http://localhost:8080"></label>
+      <label class="wide">Blender 可执行文件 <span class="hint" id="cfg-blender-hint"></span><input id="cfg-blender" placeholder="blender"></label>
+    </div>
+    <p class="hint" id="cfg-note"></p>
+    <div class="row end">
+      <button value="cancel" class="ghost">取消</button>
+      <button id="cfg-save" value="default" class="primary">保存</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

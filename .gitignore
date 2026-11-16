@@ -1,0 +1,36 @@
+# Local configuration, API keys, uploads, and generated builds
+/workspace/
+.env
+.env.*
+!.env.example
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+/build/
+/dist/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local logs
+*.log
+
+# Locally prepared game resources and textured example meshes
+/data/versions/
+/examples/*.glb
+/examples/*.gltf
+/examples/*.obj
+/examples/*.mtl

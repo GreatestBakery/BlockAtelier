@@ -1,0 +1,12 @@
+numpy
+scipy
+pillow
+trimesh
+nbtlib
+litemapy
+fastapi
+uvicorn
+python-multipart
+mcp            # 可选: 只有用 MCP 服务器时需要
+# bpy          # 可选: 没装 Blender 时，可 pip install bpy 做无头渲染 (体积较大，且要求特定 Python 版本)
+pytest         # 可选: 跑自检
