@@ -1,3 +1,4 @@
+import { t, localizeMessage, getLanguage, setLanguage, applyTranslations } from './i18n.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -6,16 +7,16 @@ const $ = (s) => document.querySelector(s);
 const api = async (path, opts = {}) => {
   if (opts.json) { opts.body = JSON.stringify(opts.json); opts.headers = { 'content-type': 'application/json' }; }
   const r = await fetch('/api' + path, opts);
-  if (!r.ok) { let m = r.statusText; try { m = (await r.json()).detail || m; } catch {} throw new Error(m); }
+  if (!r.ok) { let m = r.statusText; try { m = (await r.json()).detail || m; } catch {} throw new Error(localizeMessage(typeof m === 'string' ? m : JSON.stringify(m))); }
   return (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text();
 };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let toastT;
-const toast = (msg, err) => { const t = $('#toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), err ? 6000 : 2600); };
+const toast = (msg, err) => { const t = $('#toast'); t.textContent = localizeMessage(msg); t.className = err ? 'err' : ''; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), err ? 6000 : 2600); };
 
-const state = { meta: null, mode: 'text', images: [], modelUpload: null, refSel: new Set(), refs: [], builds: [], current: null, fav: false, busy: false };
-const STAGE = { intake: '输入整理', references: '找参考', brief: '需求分析', program: '生成指令', repair: '校验修复', critique: '看图自评', voxelize: '体素化', remap: '换材质', export: '导出入库', render: '渲染', error: '出错' };
-const ST = { run: '进行中', done: '完成', warn: '注意', error: '失败' };
+const state = { meta: null, mode: 'text', images: [], modelUpload: null, refSel: new Set(), refs: [], builds: [], current: null, fav: false, busy: false, events: [] };
+const STAGE = () => ({ intake: t('输入整理'), references: t('找参考'), brief: t('需求分析'), program: t('生成指令'), repair: t('校验修复'), critique: t('看图自评'), voxelize: t('体素化'), remap: t('换材质'), export: t('导出入库'), render: t('渲染'), error: t('出错') });
+const ST = () => ({ run: t('进行中'), done: t('完成'), warn: t('注意'), error: t('失败') });
 
 /* ---------- 3D 视图 ---------- */
 const canvas = $('#canvas');
@@ -54,7 +55,7 @@ function showModel(url) {
     home = { pos: new THREE.Vector3(c.x + d * 0.62, c.y + d * 0.45, c.z + d * 0.65), target: c };
     camera.position.copy(home.pos); controls.target.copy(c); camera.near = Math.max(0.1, d / 200); camera.far = d * 20; camera.updateProjectionMatrix();
     $('#vp-empty').hidden = true;
-  }, undefined, (e) => toast('3D 预览加载失败: ' + e.message, true));
+  }, undefined, (e) => toast(t('3D 预览加载失败: ') + e.message, true));
 }
 $('#vp-reset').onclick = () => { if (home) { camera.position.copy(home.pos); controls.target.copy(home.target); } };
 $('#vp-spin').onclick = (e) => { controls.autoRotate = !controls.autoRotate; e.target.classList.toggle('on', controls.autoRotate); };
@@ -102,36 +103,42 @@ dropzone($('#drop-refs'), $('#file-refs'), async (files) => {
 /* ---------- 参考库 ---------- */
 async function loadRefs() {
   state.refs = await api('/refs');
+  renderRefs();
+}
+function renderRefs() {
   $('#ref-list').innerHTML = state.refs.map((r) => {
     const s = r.summary || {};
-    const meta = r.kind === 'structure' ? `${(s.size_xyz || []).join('×')} · ${s.blocks} 块 · ${esc(s.format || '')}<br>${(s.materials || []).slice(0, 4).map((m) => esc(m.block)).join('、')}` : '图片';
-    return `<div class="refcard"><div class="row"><b>${esc(r.name)}</b><button class="ghost small danger" data-del="${r.id}">删除</button></div><div class="m">${meta}</div></div>`;
-  }).join('') || '<p class="muted">还没有参考文件。</p>';
+    const meta = r.kind === 'structure' ? `${(s.size_xyz || []).join('×')} · ${s.blocks} ${t('块')} · ${esc(s.format || '')}<br>${(s.materials || []).slice(0, 4).map((m) => esc(m.block)).join('、')}` : t('图片');
+    return `<div class="refcard"><div class="row"><b>${esc(r.name)}</b><button class="ghost small danger" data-del="${r.id}">${t('删除')}</button></div><div class="m">${meta}</div></div>`;
+  }).join('') || `<p class="muted">${t('还没有参考文件。')}</p>`;
   $('#ref-list').querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => { await api('/refs/' + b.dataset.del, { method: 'DELETE' }); state.refSel.delete(b.dataset.del); loadRefs(); }));
-  $('#chips-refs').innerHTML = state.refs.map((r) => `<span class="chip ${state.refSel.has(r.id) ? 'on' : ''}" data-id="${r.id}">${esc(r.name)}</span>`).join('') || '<span class="muted">参考库为空</span>';
+  $('#chips-refs').innerHTML = state.refs.map((r) => `<span class="chip ${state.refSel.has(r.id) ? 'on' : ''}" data-id="${r.id}">${esc(r.name)}</span>`).join('') || `<span class="muted">${t('参考库为空')}</span>`;
   $('#chips-refs').querySelectorAll('.chip').forEach((c) => (c.onclick = () => { state.refSel.has(c.dataset.id) ? state.refSel.delete(c.dataset.id) : state.refSel.add(c.dataset.id); c.classList.toggle('on'); }));
 }
 
 /* ---------- 作品库 ---------- */
 async function loadBuilds() {
   state.builds = await api(`/builds?q=${encodeURIComponent($('#lib-q').value)}&favorite=${state.fav}`);
+  renderBuilds();
+}
+function renderBuilds() {
   $('#build-list').innerHTML = state.builds.map((b) => `
     <div class="card ${state.current?.id === b.id ? 'sel' : ''}" data-id="${b.id}">
       <img src="/api/builds/${b.id}/file/thumb.png" alt="" loading="lazy">
       <div><div class="t">${esc(b.title)}</div>
-        <div class="m">${b.size.join('×')} · ${b.blocks} 块 · ${esc(b.version)}</div>
-        <div class="m">${{ text: '文字', model: '3D 模型', import: '导入', mcp: 'MCP' }[b.mode] || b.mode}${b.parent_id ? ' · 修改版' : ''}${b.tags.length ? ' · ' + esc(b.tags.join(' ')) : ''}</div>
-        <div class="acts"><button class="fav ${b.favorite ? 'on' : ''}" data-a="fav" title="收藏">★</button><button data-a="rename">改名</button><button data-a="tags">标签</button><button data-a="del" class="danger">删除</button></div>
-      </div></div>`).join('') || '<p class="muted">作品库是空的。</p>';
+        <div class="m">${b.size.join('×')} · ${b.blocks} ${t('块')} · ${esc(b.version)}</div>
+        <div class="m">${{ text: t('文字'), model: t('3D 模型'), import: t('导入'), mcp: 'MCP' }[b.mode] || b.mode}${b.parent_id ? ` · ${t('修改版')}` : ''}${b.tags.length ? ' · ' + esc(b.tags.join(' ')) : ''}</div>
+        <div class="acts"><button class="fav ${b.favorite ? 'on' : ''}" data-a="fav" title="${t('收藏')}">★</button><button data-a="rename">${t('改名')}</button><button data-a="tags">${t('标签')}</button><button data-a="del" class="danger">${t('删除')}</button></div>
+      </div></div>`).join('') || `<p class="muted">${t('作品库是空的。')}</p>`;
   $('#build-list').querySelectorAll('.card').forEach((card) => {
     const id = card.dataset.id, b = state.builds.find((x) => x.id === id);
     card.onclick = () => openBuild(id);
     card.querySelectorAll('[data-a]').forEach((btn) => (btn.onclick = async (e) => {
       e.stopPropagation(); const a = btn.dataset.a;
       if (a === 'fav') await api('/builds/' + id, { method: 'PATCH', json: { favorite: !b.favorite } });
-      if (a === 'rename') { const t = prompt('新标题', b.title); if (!t) return; await api('/builds/' + id, { method: 'PATCH', json: { title: t } }); }
-      if (a === 'tags') { const t = prompt('标签（空格分隔）', b.tags.join(' ')); if (t === null) return; await api('/builds/' + id, { method: 'PATCH', json: { tags: t.split(/[\s,，]+/).filter(Boolean) } }); }
-      if (a === 'del') { if (!confirm(`删除「${b.title}」及其全部文件？`)) return; await api('/builds/' + id, { method: 'DELETE' }); if (state.current?.id === id) state.current = null; }
+      if (a === 'rename') { const title = prompt(t('新标题'), b.title); if (!title) return; await api('/builds/' + id, { method: 'PATCH', json: { title } }); }
+      if (a === 'tags') { const tags = prompt(t('标签（空格分隔）'), b.tags.join(' ')); if (tags === null) return; await api('/builds/' + id, { method: 'PATCH', json: { tags: tags.split(/[\s,，]+/).filter(Boolean) } }); }
+      if (a === 'del') { if (!confirm(t('删除「{title}」及其全部文件？', { title: b.title }))) return; await api('/builds/' + id, { method: 'DELETE' }); if (state.current?.id === id) state.current = null; }
       loadBuilds();
     }));
   });
@@ -142,43 +149,47 @@ $('#lib-fav').onclick = (e) => { state.fav = !state.fav; e.target.classList.togg
 async function openBuild(id, keepTab) {
   const b = (state.current = await api('/builds/' + id));
   showModel(`/api/builds/${id}/file/model.glb?t=${Date.now()}`);
-  $('#vp-title').innerHTML = `${esc(b.title)}<small>${b.size.join(' × ')} · ${b.blocks} 块 · Java ${esc(b.version)}</small>`;
+  renderBuildDetails(b);
+  if (!keepTab && (b.report?.dsl_errors?.length || b.report?.errors?.length)) openTab('report');
+}
+function renderBuildDetails(b, renderOptions = null) {
+  $('#vp-title').innerHTML = `${esc(b.title)}<small>${b.size.join(' × ')} · ${b.blocks} ${t('块')} · Java ${esc(b.version)}</small>`;
   $('#iterate-box').hidden = !b.program;
   const rep = b.report || {}, st = rep.stats || {};
-  const issues = [...(rep.dsl_errors || []).map((m) => ['err', '指令错误：' + m]), ...(rep.errors || []).map((m) => ['err', m]), ...(rep.warnings || []).map((m) => ['warn', m])];
+  const issues = [...(rep.dsl_errors || []).map((m) => ['err', t('指令错误：') + localizeMessage(m)]), ...(rep.errors || []).map((m) => ['err', m]), ...(rep.warnings || []).map((m) => ['warn', m])];
   $('#tab-report').innerHTML = `<div class="kv">
-      <div><span>尺寸 (x·y·z)</span>${b.size.join(' × ')}</div><div><span>方块数</span>${b.blocks}</div><div><span>方块种类</span>${st.palette ?? '-'}</div>
-      <div><span>自动补连接</span>${st.autoconnected ?? 0} 处</div><div><span>预览网格</span>${rep.mesh?.triangles ?? '-'} 三角面</div><div><span>用时</span>${rep.seconds ?? '-'} s</div>
-      <div><span>模型</span>${esc(b.provider || '-')} ${esc(b.model || '')}</div><div><span>来源</span>${esc(rep.source?.format || b.mode)}</div></div>` +
-    (issues.length ? issues.map(([k, m]) => `<div class="issue ${k}">${esc(m)}</div>`).join('') : '<div class="issue ok">校验通过：方块 id 全部有效，结构连通且落地。</div>') +
-    (b.prompt ? `<p class="muted" style="margin-top:10px">描述：${esc(b.prompt)}</p>` : '') +
-    (b.brief?.concept ? `<p class="muted">方案：${esc(b.brief.concept)}</p>` : '');
+      <div><span>${t('尺寸 (x·y·z)')}</span>${b.size.join(' × ')}</div><div><span>${t('方块数')}</span>${b.blocks}</div><div><span>${t('方块种类')}</span>${st.palette ?? '-'}</div>
+      <div><span>${t('自动补连接')}</span>${st.autoconnected ?? 0} ${t('处')}</div><div><span>${t('预览网格')}</span>${rep.mesh?.triangles ?? '-'} ${t('三角面')}</div><div><span>${t('用时')}</span>${rep.seconds ?? '-'} s</div>
+      <div><span>${t('模型')}</span>${esc(b.provider || '-')} ${esc(b.model || '')}</div><div><span>${t('来源')}</span>${esc(rep.source?.format || ({ text: t('文字'), model: t('3D 模型'), import: t('导入'), mcp: 'MCP' }[b.mode] || b.mode))}</div></div>` +
+    (issues.length ? issues.map(([k, m]) => `<div class="issue ${k}">${esc(localizeMessage(m))}</div>`).join('') : `<div class="issue ok">${t('校验通过：方块 id 全部有效，结构连通且落地。')}</div>`) +
+    (b.prompt ? `<p class="muted" style="margin-top:10px">${t('描述：')}${esc(b.prompt)}</p>` : '') +
+    (b.brief?.concept ? `<p class="muted">${t('方案：')}${esc(b.brief.concept)}</p>` : '');
   const mats = rep.materials || [];
-  $('#tab-materials').innerHTML = mats.length ? `<table><tr><th>方块</th><th>数量</th><th>约合组（64）</th></tr>${mats.map((m) => `<tr><td>${esc(m.block.replace('minecraft:', ''))}</td><td class="num">${m.count}</td><td class="num">${(m.count / 64).toFixed(1)}</td></tr>`).join('')}</table>` : '<p class="muted">无数据</p>';
-  $('#program-json').textContent = b.program ? JSON.stringify(b.program, null, 1) : '这个作品不是由指令生成的（3D 模型转换或导入）。';
-  renderRenders(b);
-  document.querySelectorAll('#build-list .card').forEach((c) => c.classList.toggle('sel', c.dataset.id === id));
-  if (!keepTab && issues.some(([k]) => k === 'err')) openTab('report');
+  $('#tab-materials').innerHTML = mats.length ? `<table><tr><th>${t('方块')}</th><th>${t('数量')}</th><th>${t('约合组（64）')}</th></tr>${mats.map((m) => `<tr><td>${esc(m.block.replace('minecraft:', ''))}</td><td class="num">${m.count}</td><td class="num">${(m.count / 64).toFixed(1)}</td></tr>`).join('')}</table>` : `<p class="muted">${t('无数据')}</p>`;
+  $('#program-json').textContent = b.program ? JSON.stringify(b.program, null, 1) : t('这个作品不是由指令生成的（3D 模型转换或导入）。');
+  renderRenders(b, renderOptions);
+  document.querySelectorAll('#build-list .card').forEach((c) => c.classList.toggle('sel', c.dataset.id === b.id));
 }
 
-function renderRenders(b) {
+function renderRenders(b, savedOptions = null) {
   const f = (n) => `/api/builds/${b.id}/file/${n}`;
   const renders = b.files.filter((n) => n.startsWith('render_') && n.endsWith('.png'));
   $('#tab-renders').innerHTML = `
     <div class="btnrow">
-      <a href="${f('build.litematic')}?download=1">下载 .litematic</a><a href="${f('build.schem')}?download=1">下载 .schem (v3)</a>
-      <a href="#" data-x="schem2">.schem (v2 旧版)</a><a href="#" data-x="obj">OBJ + 贴图 (Blender / MCprep)</a>
-      <a href="${f('model.glb')}?download=1">GLB</a>${b.program ? `<a href="${f('program.json')}?download=1">指令 JSON</a>` : ''}
+      <a href="${f('build.litematic')}?download=1">${t('下载 .litematic')}</a><a href="${f('build.schem')}?download=1">${t('下载 .schem (v3)')}</a>
+      <a href="#" data-x="schem2">${t('.schem (v2 旧版)')}</a><a href="#" data-x="obj">${t('OBJ + 贴图 (Blender / MCprep)')}</a>
+      <a href="${f('model.glb')}?download=1">GLB</a>${b.program ? `<a href="${f('program.json')}?download=1">${t('指令 JSON')}</a>` : ''}
     </div>
     <div class="render-opts">
-      <label>宽<input id="r-w" type="number" value="1600"></label><label>高<input id="r-h" type="number" value="1200"></label>
-      <label>采样<input id="r-s" type="number" value="64"></label><label>方位角<input id="r-az" type="number" value="35"></label>
-      <label>俯角<input id="r-el" type="number" value="28"></label><label>张数<input id="r-n" type="number" value="1" min="1" max="12"></label>
-      <button id="btn-render" class="primary" style="flex:none" ${state.meta.blender ? '' : 'disabled title="未找到 Blender，见设置"'}>Blender 渲染</button>
-      <button id="btn-snippet" style="flex:none" title="交给已连接 Blender MCP 的模型执行">复制 Blender MCP 脚本</button>
+      <label>${t('宽')}<input id="r-w" type="number" value="1600"></label><label>${t('高')}<input id="r-h" type="number" value="1200"></label>
+      <label>${t('采样')}<input id="r-s" type="number" value="64"></label><label>${t('方位角')}<input id="r-az" type="number" value="35"></label>
+      <label>${t('俯角')}<input id="r-el" type="number" value="28"></label><label>${t('张数')}<input id="r-n" type="number" value="1" min="1" max="12"></label>
+      <button id="btn-render" class="primary" style="flex:none" ${state.meta.blender ? '' : `disabled title="${t('未找到 Blender，见设置')}"`}>${t('Blender 渲染')}</button>
+      <button id="btn-snippet" style="flex:none" title="${t('交给已连接 Blender MCP 的模型执行')}">${t('复制 Blender MCP 脚本')}</button>
     </div>
-    <div class="renders"><a href="${f('preview.png')}" target="_blank"><img src="${f('preview.png')}?t=${Date.now()}" alt="四视角预览"></a>
+    <div class="renders"><a href="${f('preview.png')}" target="_blank"><img src="${f('preview.png')}?t=${Date.now()}" alt="${t('四视角预览')}"></a>
       ${renders.map((n) => `<a href="${f(n)}" target="_blank"><img src="${f(n)}" alt="${n}"></a>`).join('')}</div>`;
+  if (savedOptions) for (const [id, value] of Object.entries(savedOptions)) { const input = document.getElementById(id); if (input) input.value = value; }
   $('#tab-renders').querySelectorAll('[data-x]').forEach((a) => (a.onclick = async (e) => {
     e.preventDefault();
     try { const r = await api(`/builds/${b.id}/export/${a.dataset.x}`, { method: 'POST' }); location.href = f(r.file) + '?download=1'; } catch (err) { toast(err.message, true); }
@@ -189,27 +200,28 @@ function renderRenders(b) {
   };
   $('#btn-snippet').onclick = async () => {
     const code = await api(`/builds/${b.id}/blender_snippet`);
-    try { await navigator.clipboard.writeText(code); toast('已复制。把它交给 Blender MCP 的“执行代码”工具即可在你的 Blender 里渲染。'); } catch { toast('复制失败，请在 /api/builds/' + b.id + '/blender_snippet 手动获取', true); }
+    try { await navigator.clipboard.writeText(code); toast(t('已复制。把它交给 Blender MCP 的“执行代码”工具即可在你的 Blender 里渲染。')); } catch { toast(t('复制失败，请在 {url} 手动获取', { url: '/api/builds/' + b.id + '/blender_snippet' }), true); }
   };
 }
 
 /* ---------- 生成 ---------- */
-function addEvent(ev) {
+function addEvent(ev, remember = true) {
+  if (remember) state.events.push(ev);
   const tl = $('#timeline');
   const last = tl.lastElementChild;
-  const html = `<span class="st">${STAGE[ev.stage] || ev.stage} · ${ST[ev.status] || ev.status}</span><span>${esc(ev.message)}</span>`;
+  const html = `<span class="st">${STAGE()[ev.stage] || ev.stage} · ${ST()[ev.status] || ev.status}</span><span>${esc(localizeMessage(ev.message))}</span>`;
   if (last && last.dataset.stage === ev.stage && last.classList.contains('run')) { last.className = ev.status; last.innerHTML = html; }
   else { const li = document.createElement('li'); li.className = ev.status; li.dataset.stage = ev.stage; li.innerHTML = html; tl.appendChild(li); }
   tl.parentElement.scrollTop = tl.parentElement.scrollHeight;
 }
 async function follow(jobId, clear = true) {
-  if (clear) $('#timeline').innerHTML = '';
+  if (clear) { state.events = []; $('#timeline').innerHTML = ''; }
   let since = 0;
   for (;;) {
     const j = await api(`/jobs/${jobId}?since=${since}`);
-    j.events.forEach(addEvent); since = j.next;
+    j.events.forEach(ev => addEvent(ev)); since = j.next;
     if (j.status === 'done') return j.result;
-    if (j.status === 'error') throw new Error(j.error);
+    if (j.status === 'error') throw new Error(localizeMessage(j.error));
     await new Promise((r) => setTimeout(r, 500));
   }
 }
@@ -221,41 +233,43 @@ async function generate(extra = {}) {
     image_uploads: state.images.map((u) => u.name), ref_ids: [...state.refSel],
     model_upload: state.modelUpload?.name, voxel: { size: +$('#vox-size').value, palette: $('#vox-palette').value, solid: $('#vox-solid').checked, up: $('#vox-up').value }, ...extra,
   };
-  state.busy = true; $('#btn-generate').disabled = $('#btn-iterate').disabled = true; $('#btn-generate').textContent = '生成中…';
+  state.busy = true; $('#btn-generate').disabled = $('#btn-iterate').disabled = true; $('#btn-generate').textContent = t('生成中…');
   openTab('flow');
   try {
     const { job_id } = await api('/generate', { method: 'POST', json: body });
     const rec = await follow(job_id);
     await loadBuilds(); await openBuild(rec.id);
   } catch (e) { toast(e.message, true); }
-  finally { state.busy = false; $('#btn-generate').disabled = $('#btn-iterate').disabled = false; $('#btn-generate').textContent = '生成'; }
+  finally { state.busy = false; $('#btn-generate').disabled = $('#btn-iterate').disabled = false; $('#btn-generate').textContent = t('生成'); }
 }
 $('#btn-generate').onclick = () => generate();
 $('#btn-iterate').onclick = () => {
   const p = $('#iterate-prompt').value.trim();
-  if (!p || !state.current) return toast('请写下要怎么改', true);
+  if (!p || !state.current) return toast(t('请写下要怎么改'), true);
   generate({ mode: 'text', prompt: p, parent_id: state.current.id, version: state.current.version });
 };
 
 /* ---------- 设置 ---------- */
-function applyMeta(m) {
+function applyMeta(m, preserve = false) {
+  const version = $('#version').value, palette = $('#vox-palette').value;
   state.meta = m;
-  $('#version').innerHTML = m.versions.map((v) => `<option value="${v.id}">Java ${v.id}${v.type !== 'release' ? '（快照）' : ''}</option>`).join('');
-  $('#version').value = m.config.default_version || m.latest;
-  $('#vox-palette').innerHTML = m.palettes.map((p) => `<option value="${p}">${{ all: '全部实心方块', color: '混凝土 + 羊毛 + 陶瓦', concrete: '仅混凝土', wool: '仅羊毛', terracotta: '仅陶瓦', stone: '石质', wood: '木板' }[p]}</option>`).join('');
+  $('#version').innerHTML = m.versions.map((v) => `<option value="${v.id}">Java ${v.id}${v.type !== 'release' ? t('（快照）') : ''}</option>`).join('');
+  $('#version').value = preserve && m.versions.some(v => v.id === version) ? version : m.config.default_version || m.latest;
+  $('#vox-palette').innerHTML = m.palettes.map((p) => `<option value="${p}">${{ all: t('全部实心方块'), color: t('混凝土 + 羊毛 + 陶瓦'), concrete: t('仅混凝土'), wool: t('仅羊毛'), terracotta: t('仅陶瓦'), stone: t('石质'), wood: t('木板') }[p]}</option>`).join('');
+  if (preserve) $('#vox-palette').value = palette;
   const c = m.config, badge = $('#provider-badge');
-  badge.textContent = c.provider === 'mock' ? '离线模拟（未接入模型）' : `${c.provider} · ${c.model || '未填模型名'}`;
+  badge.textContent = c.provider === 'mock' ? t('离线模拟（未接入模型）') : `${c.provider} · ${c.model || t('未填模型名')}`;
   badge.className = 'badge' + (c.provider === 'mock' ? ' mock' : '');
 }
 $('#btn-settings').onclick = () => {
   const m = state.meta, c = m.config;
-  $('#cfg-provider').innerHTML = Object.entries(m.presets).map(([k, p]) => `<option value="${k}">${k} — ${esc(p.note)}</option>`).join('');
+  $('#cfg-provider').innerHTML = Object.entries(m.presets).map(([k, p]) => `<option value="${k}">${k} — ${esc(t(p.note))}</option>`).join('');
   $('#cfg-provider').value = c.provider; $('#cfg-model').value = c.model; $('#cfg-base').value = c.base_url; $('#cfg-key').value = '';
-  $('#cfg-key-hint').textContent = c.has_key ? '已保存' : '未设置';
+  $('#cfg-key-hint').textContent = c.has_key ? t('已保存') : t('未设置');
   $('#cfg-repair').value = c.repair_rounds; $('#cfg-critique').value = c.critique_rounds; $('#cfg-vision').checked = c.vision;
   $('#cfg-searx').value = c.searxng_url; $('#cfg-blender').value = c.blender_path;
-  $('#cfg-blender-hint').textContent = m.blender ? '已找到' : '未找到';
-  const upd = () => { const p = m.presets[$('#cfg-provider').value]; $('#cfg-base').placeholder = p.base_url || '必填'; $('#cfg-note').textContent = 'Key 只保存在本机 workspace/config.json；也可以用环境变量 ATELIER_API_KEY。'; };
+  $('#cfg-blender-hint').textContent = m.blender ? t('已找到') : t('未找到');
+  const upd = () => { const p = m.presets[$('#cfg-provider').value]; $('#cfg-base').placeholder = p.base_url || t('必填'); $('#cfg-note').textContent = t('Key 只保存在本机 workspace/config.json；也可以用环境变量 ATELIER_API_KEY。'); };
   $('#cfg-provider').onchange = upd; upd();
   $('#dlg-settings').showModal();
 };
@@ -266,7 +280,7 @@ $('#cfg-save').onclick = async (e) => {
       provider: $('#cfg-provider').value, model: $('#cfg-model').value.trim(), base_url: $('#cfg-base').value.trim(), api_key: $('#cfg-key').value,
       repair_rounds: +$('#cfg-repair').value, critique_rounds: +$('#cfg-critique').value, vision: $('#cfg-vision').checked,
       searxng_url: $('#cfg-searx').value.trim(), blender_path: $('#cfg-blender').value.trim() || 'blender' } }));
-    $('#dlg-settings').close(); toast('已保存');
+    $('#dlg-settings').close(); toast(t('已保存'));
   } catch (err) { toast(err.message, true); }
 };
 
@@ -275,6 +289,40 @@ $('#cfg-save').onclick = async (e) => {
   try {
     applyMeta(await api('/meta')); await loadRefs(); await loadBuilds();
     if (state.builds[0]) openBuild(state.builds[0].id);
-  } catch (e) { toast('无法连接后端: ' + e.message, true); }
+  } catch (e) { toast(t('无法连接后端: ') + e.message, true); }
   resize();
 })();
+
+
+function refreshLanguage() {
+  applyTranslations();
+  $('#language').value = getLanguage();
+  $('#btn-generate').textContent = t(state.busy ? '生成中…' : '生成');
+  if (state.modelUpload) $('#drop-model').textContent = state.modelUpload.original;
+  if (state.meta) {
+    applyMeta(state.meta, true);
+    const selectedProvider = $('#cfg-provider').value;
+    $('#cfg-provider').innerHTML = Object.entries(state.meta.presets).map(([k, p]) => `<option value="${k}">${k} — ${esc(t(p.note))}</option>`).join('');
+    if (selectedProvider) $('#cfg-provider').value = selectedProvider;
+    $('#cfg-key-hint').textContent = t(state.meta.config.has_key ? '已保存' : '未设置');
+    $('#cfg-blender-hint').textContent = t(state.meta.blender ? '已找到' : '未找到');
+    $('#cfg-note').textContent = t('Key 只保存在本机 workspace/config.json；也可以用环境变量 ATELIER_API_KEY。');
+    const preset = state.meta.presets[$('#cfg-provider').value];
+    if (preset) $('#cfg-base').placeholder = preset.base_url || t('必填');
+  }
+  renderRefs();
+  renderBuilds();
+  if (state.current) {
+    const options = Object.fromEntries(['r-w', 'r-h', 'r-s', 'r-az', 'r-el', 'r-n'].map(id => [id, document.getElementById(id)?.value]));
+    renderBuildDetails(state.current, options);
+  }
+  if (state.events.length) {
+    $('#timeline').innerHTML = '';
+    state.events.forEach(ev => addEvent(ev, false));
+  }
+}
+$('#language').addEventListener('change', event => {
+  setLanguage(event.target.value);
+  refreshLanguage();
+});
+refreshLanguage();

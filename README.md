@@ -50,7 +50,7 @@ The initial configuration uses a local rule-based generator for a small set of b
 
 ## Model configuration
 
-The **Model and Rendering Settings** panel configures the provider, model identifier, API key, endpoint, visual input support, and rendering options. The current interface uses Chinese labels; the settings button is labeled **模型与渲染设置**.
+The **Model and Rendering Settings** panel configures the provider, model identifier, API key, endpoint, visual input support, and rendering options. The interface supports **English** and **Simplified Chinese**. Use the language selector in the header to switch instantly. The initial language follows the browser preference, and an explicit selection is saved in local browser storage. Switching languages preserves form entries, selected versions, unsaved settings, and render options. User-authored descriptions, build titles, and building-program JSON retain their original text.
 
 | Provider setting | Implemented protocol | Intended service |
 |---|---|---|
@@ -217,7 +217,7 @@ The update utility retrieves version metadata, block properties, blockstates, mo
 | Path | Responsibility |
 |---|---|
 | `run.py` | Local application launcher |
-| `web/` | Browser interface and bundled three.js modules |
+| `web/` | Bilingual browser interface, frontend localization, and bundled three.js modules |
 | `atelier/server.py` | FastAPI endpoints, background jobs, uploads, and downloads |
 | `atelier/pipeline.py` | Generation, validation, repair, visual review, and export orchestration |
 | `atelier/llm/` | Provider adapters and offline rule-based generation |
@@ -268,7 +268,13 @@ Run the offline Python suite from the project directory:
 python -m pytest tests -q
 ```
 
-The suite covers version profiles, geometry operations, transformations, validation, block connections, Litematic decoding, schematic round trips, mesh export, voxel colors, local provider-protocol fixtures, repair behavior, and library operations. Independent schematic checks are provided under `tests/crosscheck/` for schematicjs and prismarine-schematic; these require their own JavaScript dependencies and are not part of the Python test command.
+The suite covers version profiles, geometry operations, transformations, validation, block connections, Litematic decoding, schematic round trips, mesh export, voxel colors, local provider-protocol fixtures, repair behavior, and library operations. Frontend language preference, fallback, and diagnostic translations can be tested separately with Node.js:
+
+```bash
+node --experimental-vm-modules tests/i18n.test.mjs
+```
+
+Independent schematic checks are provided under `tests/crosscheck/` for schematicjs and prismarine-schematic; these require their own JavaScript dependencies and are not part of the Python test command.
 
 Bundled screenshots and render examples document previous interface and rendering checks. They are not a guarantee of compatibility on every platform. Live model-provider calls, loading in an actual game, and external tools require separate integration testing. Local protocol fixtures do not establish successful authentication or behavior against a live provider.
 
