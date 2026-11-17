@@ -1,4 +1,4 @@
-"""读入已有的结构文件 (.litematic / .schem v2,v3 / 原版 .nbt)，用作参考或直接入库、转格式、渲染。"""
+"""Read Minecraft structure formats into normalized voxel grids."""
 from pathlib import Path
 import numpy as np
 import nbtlib

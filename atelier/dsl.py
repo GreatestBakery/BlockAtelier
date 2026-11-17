@@ -1,8 +1,4 @@
-"""建筑指令 (Build Program) —— 大模型不直接吐体素，而是写一段受限的 JSON 指令，由这里确定性地执行。
-
-为什么这样设计: 让模型逐格输出几万个方块既超 token 又数不准坐标；让模型写任意 Python 则有安全和稳定性问题。
-指令集介于两者之间: 表达力够盖房子，执行结果可校验、可修复、可复现。
-"""
+"""Deterministic JSON operations for Minecraft geometry and transformed components."""
 import math
 from .voxel import VoxelGrid
 from .blocks import parse_state, format_state

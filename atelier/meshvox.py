@@ -1,7 +1,4 @@
-"""3D 模型 (.obj/.glb/.gltf/.stl/.ply/.fbx* ) -> 体素 -> 方块。
-流程借鉴 ObjToSchematic / BlockBlender: 表面体素化 -> 采样颜色 -> 在 CIELAB 空间找最接近的方块。
-(*fbx 等格式取决于 trimesh 能否读取；读不了时先在 Blender 里转成 glb。)
-"""
+"""Sample 3D meshes and map voxel colors to Minecraft block palettes."""
 import numpy as np
 from scipy.spatial import cKDTree
 from scipy import ndimage

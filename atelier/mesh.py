@@ -1,9 +1,4 @@
-"""体素 -> 带贴图的三角网格。按游戏自己的 blockstates/models JSON 烘焙 (楼梯、台阶、栅栏、门都是真实形状)，
-输出 GLB (网页预览 / Blender) 和 OBJ+MTL (按贴图分材质，命名与 jmc2obj/Mineways 习惯一致，便于 MCprep 接手)。
-
-思路参考: deepslate / prismarine-viewer 的模型烘焙，Mineways / jmc2obj 的导出布局。
-已知简化: 不处理 uvlock；方块实体模型 (箱子、床、告示牌、旗帜) 用粒子贴图的缩小方块代替；流体画成 14/16 高的方块。
-"""
+"""Bake Minecraft block models and textures into GLB and OBJ meshes."""
 import json
 from pathlib import Path
 import numpy as np

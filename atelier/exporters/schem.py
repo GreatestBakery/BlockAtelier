@@ -1,5 +1,4 @@
-"""导出 Sponge Schematic (.schem)，WorldEdit / FAWE / Axiom / Litematica 都能读。
-默认写 v3 (WorldEdit 7.3+ 的原生格式)；老环境可选 v2。"""
+"""Sponge schematic v2/v3 serialization with block properties and palettes."""
 import time
 import numpy as np
 import nbtlib

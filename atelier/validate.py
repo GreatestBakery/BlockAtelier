@@ -1,4 +1,4 @@
-"""校验与规整: 方块合法性 -> 自动连接 -> 结构检查。产出给人看也给模型看的问题清单。"""
+"""Block-state normalization, neighbor connections, and structural validation."""
 import numpy as np
 from scipy import ndimage
 from .blocks import parse_state, format_state

@@ -1,4 +1,4 @@
-"""导出 Litematica (.litematic)。位打包等细节复用开源库 litemapy，本文件只管版本字段。"""
+"""Litematica export with target DataVersion and format-version selection."""
 import time
 from litemapy import Region, BlockState
 

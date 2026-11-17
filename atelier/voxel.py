@@ -1,4 +1,4 @@
-"""稀疏体素网格: {(x,y,z): 规范方块状态}。坐标 x=东, y=上, z=南 (与游戏一致)。"""
+"""Sparse voxel grids with bounds, material counts, and dense-array conversion."""
 import numpy as np
 
 

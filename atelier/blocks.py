@@ -1,4 +1,4 @@
-"""方块状态字符串 + 版本注册表。所有“这个方块在目标版本里存在吗”的判断都走这里。"""
+"""Versioned block lookup, property normalization, aliases, and palette selection."""
 import difflib, json, re
 from functools import lru_cache
 from pathlib import Path
