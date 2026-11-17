@@ -19,6 +19,18 @@ The desktop library starts separately from the development checkout. To reuse an
 
 Ollama runs separately on the same computer; select `ollama`, enter a locally installed model identifier, and use `http://localhost:11434/v1`. Blender can be configured in settings; the standard `/Applications/Blender.app` installation is detected when present.
 
+## MCP server mode
+
+The application executable also serves the BlockAtelier MCP tools over stdio, for clients such as opencode, Codex, or Claude Code. No window opens in this mode, and no separate Python installation is needed:
+
+```bash
+opencode mcp add blockatelier --global -- /Applications/BlockAtelier.app/Contents/MacOS/BlockAtelier --mcp
+```
+
+Adjust the path if the application is stored elsewhere. Clients configured through JSON or TOML use the executable as the command and `--mcp` as its only argument.
+
+MCP mode runs the same bundled `atelier` core as the window and uses the same storage directory, so it shares the configuration, the rendering profile, and the build library. Builds created by a connected client appear in the desktop library; reopen or refresh the library to see them. Open the application once before first use so the rendering profile is installed. Diagnostics are written to `mcp.log` in the application-support directory. `ATELIER_WORKSPACE` and `ATELIER_DATA` override the storage locations.
+
 ## Building from source
 
 The lockfile records the Python 3.14 build environment used for this release. Public application bundles exclude game-derived version profiles. They are prepared on the user’s computer at first launch. Game-derived resources are outside the source-code license.

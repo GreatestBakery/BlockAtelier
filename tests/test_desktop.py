@@ -56,3 +56,26 @@ def test_native_save_and_cancel(monkeypatch, tmp_path):
     assert not list(tmp_path.glob('.blockatelier-*'))
     monkeypatch.setattr(api._window, 'create_file_dialog', lambda *args, **kwargs: None)
     assert api.save_file('/api/builds/build-1/file/build.schem') == {'cancelled': True}
+
+
+def test_mcp_mode_serves_the_shared_core(monkeypatch, tmp_path):
+    """`BlockAtelier --mcp` must start the same MCP server object as the source launchers, on the desktop storage."""
+    pytest.importorskip('mcp')
+    import run_desktop, run_mcp
+    from atelier import mcp_server
+    assert run_mcp.mcp is mcp_server.mcp
+    monkeypatch.setenv('ATELIER_WORKSPACE', str(tmp_path))
+    monkeypatch.delenv('ATELIER_DATA', raising=False)
+    monkeypatch.setenv('PATH', '/usr/bin')
+    started = []
+    monkeypatch.setattr(mcp_server.mcp, 'run', lambda *args, **kwargs: started.append(True))
+    try:
+        assert run_desktop.mcp_main() == 0
+        assert started == [True]
+        import os
+        assert os.environ['ATELIER_WORKSPACE'] == str(tmp_path) and os.environ['ATELIER_DATA'] == str(tmp_path / 'data')
+        assert (tmp_path / 'mcp.log').exists()
+    finally:
+        import logging, os
+        logging.basicConfig(force=True)
+        os.environ.pop('ATELIER_DATA', None)   # set by mcp_main; monkeypatch restores a pre-existing value afterwards
