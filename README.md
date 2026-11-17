@@ -4,7 +4,7 @@ BlockAtelier is an experimental local application for creating Minecraft Java Ed
 
 Builds can be exported as `.litematic`, Sponge `.schem`, and GLB files. OBJ export with textures is available for external rendering workflows.
 
-Version: **0.3.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
+Version: **0.4.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
 
 ![BlockAtelier interface](examples/ui.jpg)
 
@@ -69,9 +69,16 @@ The **Model and Rendering Settings** panel configures the provider, model identi
 | `qwen` | OpenAI-compatible chat completions | DashScope endpoint preset |
 | `openrouter` | OpenAI-compatible chat completions | OpenRouter endpoint preset |
 | `ollama` | OpenAI-compatible chat completions | Local Ollama endpoint |
+| `opencode` | Local opencode 2.x CLI | Models and credentials configured in opencode |
 | `custom` | OpenAI-compatible chat completions | Custom endpoints, including compatible LM Studio or vLLM servers |
 
 Use a model identifier available to the configured account or local service. Reference images and visual review require a model with image input support. Disable visual processing for text-only models.
+
+### opencode as a model source
+
+In either the web interface or Mac app, select **opencode** in Model and Rendering Settings. Install [opencode 2.x](https://opencode.ai/docs/cli/commands/) separately and complete its provider login first. Enter a model as `provider/model` (optionally `#variant`), or leave it blank to use opencode's default. The **opencode executable** field accepts an absolute path when it is not on PATH; the Mac app also checks `~/.opencode/bin/opencode`, `/opt/homebrew/bin/opencode`, and `/usr/local/bin/opencode`.
+
+This option calls `opencode run --format json` as the model backend for the existing generation, repair, and visual-review pipeline. Reference images are passed as file attachments when vision is enabled. Each call uses a temporary model-only agent with tool permissions disabled. API endpoint and API key fields do not apply; authentication and model settings come from opencode. Token limits and temperature are also managed by opencode. The existing MCP integration below remains available independently.
 
 Configuration is stored in `workspace/config.json`. The following environment variables override nonempty provider settings:
 

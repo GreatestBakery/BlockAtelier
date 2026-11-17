@@ -19,6 +19,8 @@ The desktop library starts separately from the development checkout. To reuse an
 
 Ollama runs separately on the same computer; select `ollama`, enter a locally installed model identifier, and use `http://localhost:11434/v1`. Blender can be configured in settings; the standard `/Applications/Blender.app` installation is detected when present.
 
+To use opencode as the app's model source, install opencode 2.x and log in to your provider, then select **opencode** in Model and Rendering Settings. Enter `provider/model` or leave the model blank for opencode's default. Set **opencode executable** to its absolute path if needed; standard OpenCode and Homebrew locations are detected even when Finder does not supply a shell PATH. No API key or endpoint is needed in BlockAtelier for this source. The web and desktop interfaces use the same adapter, including reference-image and visual-review support for image-capable models. This model-source option is independent of the MCP server mode below.
+
 ## MCP server mode
 
 The application executable also serves the BlockAtelier MCP tools over stdio, for clients such as opencode, Codex, or Claude Code. No window opens in this mode, and no separate Python installation is needed:

@@ -7,7 +7,7 @@ VERSIONS = DATA / "versions"
 WORKSPACE = Path(os.environ.get("ATELIER_WORKSPACE", ROOT / "workspace"))
 CONFIG_FILE = WORKSPACE / "config.json"
 
-# 主流大模型接入预设。除 anthropic 外都走 OpenAI 兼容的 /chat/completions 协议。
+# 主流大模型接入预设。opencode 走本机 CLI，其余除 anthropic 外走 OpenAI 兼容协议。
 # model 一栏请填你账号里实际可用的模型名（各家更新很快，这里只给地址，不替你猜型号）。
 PROVIDER_PRESETS = {
     "mock":       {"kind": "mock", "base_url": "", "note": "离线规则引擎，不联网，用于自检和演示"},
@@ -18,11 +18,13 @@ PROVIDER_PRESETS = {
     "qwen":       {"kind": "openai", "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "note": "通义千问 (DashScope 兼容模式)"},
     "openrouter": {"kind": "openai", "base_url": "https://openrouter.ai/api/v1", "note": "OpenRouter (聚合多家)"},
     "ollama":     {"kind": "openai", "base_url": "http://localhost:11434/v1", "note": "本地 Ollama"},
+    "opencode":   {"kind": "opencode", "base_url": "", "note": "本机 opencode CLI（使用已配置的模型）"},
     "custom":     {"kind": "openai", "base_url": "", "note": "任何 OpenAI 兼容服务 (LM Studio / vLLM / 中转)"},
 }
 
 DEFAULTS = {
     "provider": "mock", "model": "", "api_key": "", "base_url": "",
+    "opencode_path": "opencode",
     "vision": True,            # 模型是否支持看图 (参考图 + 渲染自检)
     "max_tokens": 16000, "temperature": 0.6,
     "repair_rounds": 2,        # 结构校验不过时让模型修几轮

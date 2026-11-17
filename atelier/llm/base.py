@@ -83,6 +83,9 @@ def make_client(cfg):
     if kind == "mock":
         from .mock import MockClient
         return MockClient(cfg)
+    if kind == "opencode":
+        from .opencode import OpenCodeClient
+        return OpenCodeClient(cfg)
     if not cfg.get("model"): raise LLMError("请在设置里填写模型名 (model)")
     return AnthropicClient(cfg) if kind == "anthropic" else OpenAICompatClient(cfg)
 
