@@ -1,5 +1,5 @@
 """Versioned block lookup, property normalization, aliases, and palette selection."""
-import difflib, json, re
+import difflib, json, re, sys
 from functools import lru_cache
 from pathlib import Path
 from . import config
@@ -57,6 +57,9 @@ def list_versions():
 def latest_version():
     vs = list_versions()
     if not vs:
+        if getattr(sys, "frozen", False):   # 打包的桌面应用: 档案由首次启动窗口下载
+            raise RuntimeError("没有任何版本档案，请先打开 BlockAtelier 桌面应用完成首次资源下载 "
+                               "(no version profile yet: open the BlockAtelier app once and choose Download & start)")
         raise RuntimeError("没有任何版本档案，请先运行: python tools/update_version.py latest")
     rel = [v for v in vs if v["type"] == "release"] or vs
     return rel[0]["id"]

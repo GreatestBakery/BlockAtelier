@@ -59,7 +59,8 @@ def _issues_text(dsl_errors, report):
     return "\n".join(lines)
 
 
-def _build_from_program(program, reg, limits):
+def build_from_program(program, reg, limits):
+    """指令 -> 体素 -> 校验。网页/桌面生成与 MCP 的 build_structure 都只走这里，保证同一份程序得到同一个结果。"""
     grid, dsl_errors = execute(program)
     grid, report = validate(grid, reg, limits)
     report["dsl_errors"] = [f"{w}: {m}" for w, m in dsl_errors]
@@ -77,6 +78,15 @@ def export_all(grid, reg, d, title, cfg, emit=None):
     Path(views[0]).replace(d / "thumb.png")
     for v in views[1:]: Path(v).unlink(missing_ok=True)
     return stats
+
+
+def finalize(grid, reg, bid, title, cfg, report, record, started=None):
+    """导出全部产物并入库。生成、结构导入、MCP 建造共用的收尾，三种入口写出的文件和作品记录因此一致。"""
+    report["mesh"] = export_all(grid, reg, store.build_dir(bid), title, cfg)
+    report["materials"] = [{"block": s, "count": n} for s, n in list(grid.counts().items())[:40]]
+    if started is not None: report["seconds"] = round(time.time() - started, 1)
+    return store.save_build({"id": bid, "title": title, "version": reg.id, "size": list(grid.size()),
+                             "blocks": len(grid), "report": report, **record})
 
 
 def run(request, cfg, emit=lambda *a, **k: None, build_id=None):
@@ -155,7 +165,7 @@ def run(request, cfg, emit=lambda *a, **k: None, build_id=None):
         if parent_prog:
             body += "\n\nThis is a REVISION of an existing build. Modify the program below according to the user request and return the full program:\n" + json.dumps(parent_prog, ensure_ascii=False)
         program = ask(SYS_PROGRAM, body, "program", refs["images"])
-        grid, dsl_errors, report = _build_from_program(program, reg, limits)
+        grid, dsl_errors, report = build_from_program(program, reg, limits)
         emit("program", "done", f"{len(program.get('ops', []))} 条指令 -> {report['stats'].get('blocks', 0)} 个方块",
              {"errors": report["errors"], "warnings": report["warnings"], "dsl_errors": report["dsl_errors"]})
 
@@ -169,7 +179,7 @@ def run(request, cfg, emit=lambda *a, **k: None, build_id=None):
                             json.dumps(program, ensure_ascii=False) + "\n\n" + _block_hint(reg), "repair")
             except LLMError as e:
                 emit("repair", "warn", f"修复失败: {e}"); break
-            g2, e2, r2 = _build_from_program(fixed, reg, limits)
+            g2, e2, r2 = build_from_program(fixed, reg, limits)
             if len(e2) + len(r2["errors"]) <= len(dsl_errors) + len(report["errors"]) and len(g2):
                 program, grid, dsl_errors, report = fixed, g2, e2, r2
             emit("repair", "done", f"剩余问题 {len(dsl_errors) + len(report['errors'])} 个")
@@ -190,7 +200,7 @@ def run(request, cfg, emit=lambda *a, **k: None, build_id=None):
                 emit("critique", "warn", f"自评跳过: {e}"); break
             notes = "; ".join(str(n) for n in r.get("notes", []))[:300]
             if r.get("verdict") == "revise" and isinstance(r.get("program"), dict):
-                g2, e2, r2 = _build_from_program(r["program"], reg, limits)
+                g2, e2, r2 = build_from_program(r["program"], reg, limits)
                 if len(g2) and not e2 and len(r2["errors"]) <= len(report["errors"]):
                     program, grid, dsl_errors, report = r["program"], g2, e2, r2
                     emit("critique", "done", "已采纳修改: " + notes); continue
@@ -201,14 +211,9 @@ def run(request, cfg, emit=lambda *a, **k: None, build_id=None):
         (d / "program.json").write_text(json.dumps(program, ensure_ascii=False, indent=1), "utf-8")
 
     emit("export", "run", "导出 .litematic / .schem / 3D 预览…")
-    mesh_stats = export_all(grid, reg, d, title, cfg)
-    report["mesh"] = mesh_stats
-    report["materials"] = [{"block": s, "count": n} for s, n in list(grid.counts().items())[:40]]
-    report["seconds"] = round(time.time() - t0, 1)
-    rec = store.save_build({"id": bid, "title": title, "prompt": prompt, "mode": mode, "version": reg.id,
-                            "provider": cfg.get("provider", ""), "model": cfg.get("model", ""), "size": list(grid.size()),
-                            "blocks": len(grid), "parent_id": request.get("parent_id"), "report": report,
-                            "tags": request.get("tags") or []})
+    rec = finalize(grid, reg, bid, title, cfg, report,
+                   {"prompt": prompt, "mode": mode, "provider": cfg.get("provider", ""), "model": cfg.get("model", ""),
+                    "parent_id": request.get("parent_id"), "tags": request.get("tags") or []}, started=t0)
     emit("export", "done", f"完成: {rec['size'][0]}×{rec['size'][1]}×{rec['size'][2]}，{rec['blocks']} 个方块，用时 {report['seconds']}s", {"build_id": bid})
     return rec
 
@@ -220,8 +225,4 @@ def import_structure(path, name, cfg, version=None):
     grid, meta = read_any(path)
     grid, report = validate(grid, reg, None)
     report["dsl_errors"] = []; report["source"] = meta
-    bid = store.new_id(); d = store.build_dir(bid)
-    report["mesh"] = export_all(grid, reg, d, name, cfg)
-    report["materials"] = [{"block": s, "count": n} for s, n in list(grid.counts().items())[:40]]
-    return store.save_build({"id": bid, "title": name, "prompt": f"导入自 {Path(path).name}", "mode": "import", "version": reg.id,
-                             "size": list(grid.size()), "blocks": len(grid), "report": report})
+    return finalize(grid, reg, store.new_id(), name, cfg, report, {"prompt": f"导入自 {Path(path).name}", "mode": "import"})
