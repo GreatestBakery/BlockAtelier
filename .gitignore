@@ -34,3 +34,6 @@ Thumbs.db
 /examples/*.gltf
 /examples/*.obj
 /examples/*.mtl
+
+# Generated desktop build metadata
+/.pyinstaller/
