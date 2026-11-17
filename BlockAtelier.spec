@@ -8,12 +8,12 @@ for name in ['LICENSE', 'COPYRIGHT', 'THIRD_PARTY_NOTICES.md', 'README.md', 'LIC
     if path.exists():
         datas.append((str(path), name if path.is_dir() else '.'))
 datas += collect_data_files('webview')
-for name in ['pywebview', 'trimesh', 'litemapy', 'numpy', 'scipy', 'pillow', 'fastapi', 'uvicorn', 'python-multipart', 'pydantic']:
+for name in ['pywebview', 'trimesh', 'litemapy', 'numpy', 'scipy', 'pillow', 'fastapi', 'uvicorn', 'python-multipart', 'pydantic', 'mcp']:
     datas += copy_metadata(name)
-hidden = collect_submodules('webview.platforms.cocoa') + ['tools.update_version', 'uvicorn.logging', 'uvicorn.loops.asyncio', 'uvicorn.protocols.http.h11_impl', 'uvicorn.lifespan.on', 'PIL.PngImagePlugin', 'PIL.JpegImagePlugin', 'PIL.WebPImagePlugin']
+hidden = collect_submodules('webview.platforms.cocoa') + ['tools.update_version', 'atelier.mcp_server', 'uvicorn.logging', 'uvicorn.loops.asyncio', 'uvicorn.protocols.http.h11_impl', 'uvicorn.lifespan.on', 'PIL.PngImagePlugin', 'PIL.JpegImagePlugin', 'PIL.WebPImagePlugin']
 a = Analysis([str(root / 'run_desktop.py')], pathex=[str(root)], binaries=[], datas=datas,
     hiddenimports=hidden, hookspath=[], hooksconfig={}, runtime_hooks=[],
-    excludes=['pytest', 'mcp', 'bpy', 'tkinter', 'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'gi', 'matplotlib', 'pandas', 'IPython', 'notebook', 'scipy.spatial.tests'], noarchive=False)
+    excludes=['pytest', 'bpy', 'tkinter', 'PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'gi', 'matplotlib', 'pandas', 'IPython', 'notebook', 'scipy.spatial.tests'], noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='BlockAtelier', debug=False,
     bootloader_ignore_signals=False, strip=False, upx=False, console=False,

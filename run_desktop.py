@@ -124,15 +124,47 @@ class DesktopApi:
         return True
 
 
-def main() -> int:
+def prepare_environment(log_name: str) -> Path:
+    """Point the shared core at the desktop storage. The window and `--mcp` modes both start here,
+    so they read the same configuration, version profiles, and build library."""
     workspace = workspace_path()
     workspace.mkdir(parents=True, exist_ok=True)
     os.environ['ATELIER_WORKSPACE'] = str(workspace)
     os.environ.setdefault('ATELIER_DATA', str(workspace / 'data'))
     # Finder-launched applications do not inherit an interactive shell's PATH.
     os.environ['PATH'] = os.pathsep.join(['/opt/homebrew/bin', '/usr/local/bin', os.environ.get('PATH', '')])
-    logging.basicConfig(filename=str(workspace / 'desktop.log'), level=logging.INFO,
+    logging.basicConfig(filename=str(workspace / log_name), level=logging.INFO,
                         format='%(asctime)s %(levelname)s %(name)s: %(message)s', force=True)
+    return workspace
+
+
+def detect_blender() -> None:
+    from atelier import config
+    if sys.platform == 'darwin':
+        blender = Path('/Applications/Blender.app/Contents/MacOS/Blender')
+        if blender.exists():
+            config.DEFAULTS['blender_path'] = str(blender)
+
+
+def mcp_main() -> int:
+    """Serve the stdio MCP tools from the packaged application: `BlockAtelier --mcp`.
+
+    No window is opened. The tools are the ones in `atelier.mcp_server`, the same module the source
+    launchers start, running on the same `atelier` package as the desktop window."""
+    workspace = prepare_environment('mcp.log')
+    try:
+        from atelier.mcp_server import mcp
+        detect_blender()
+        mcp.run()          # stdout carries protocol messages only; diagnostics go to mcp.log / stderr
+        return 0
+    except Exception as exc:
+        logging.exception('MCP startup failed')
+        print(f'Could not start the BlockAtelier MCP server: {exc}\nLog: {workspace / "mcp.log"}', file=sys.stderr)
+        return 1
+
+
+def main() -> int:
+    workspace = prepare_environment('desktop.log')
     server = None
     worker = None
     sock = None
@@ -144,10 +176,7 @@ def main() -> int:
         from atelier import config
         from atelier.server import app
 
-        if sys.platform == 'darwin':
-            blender = Path('/Applications/Blender.app/Contents/MacOS/Blender')
-            if blender.exists():
-                config.DEFAULTS['blender_path'] = str(blender)
+        detect_blender()
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind(('127.0.0.1', 0))
@@ -205,4 +234,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    raise SystemExit(mcp_main() if '--mcp' in sys.argv[1:] else main())

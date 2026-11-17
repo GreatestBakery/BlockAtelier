@@ -117,6 +117,50 @@ args = ["-m", "atelier.mcp_server"]
 cwd = "/absolute/path/to/blockatelier"
 ```
 
+### opencode configuration
+
+`opencode mcp add` cannot set a working directory, so use the `run_mcp.py` launcher, which works from any directory. Run the following command with both paths replaced; add `--global` to make the server available in every project instead of only the current one:
+
+```bash
+opencode mcp add blockatelier -- /absolute/path/to/python /absolute/path/to/blockatelier/run_mcp.py
+```
+
+The equivalent entry in `opencode.json` (project) or `~/.config/opencode/opencode.json` (global) is:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "blockatelier": {
+        "type": "local",
+        "command": ["/absolute/path/to/python", "/absolute/path/to/blockatelier/run_mcp.py"]
+      }
+    }
+  }
+}
+```
+
+This is the opencode 2.x layout. opencode 1.x uses the same server entry placed directly under `"mcp"`, without the `"servers"` level. Optional `ATELIER_*` variables go in the entry's `"environment"` object, or after `--env` on the command line. `opencode mcp list` reports whether the server connected.
+
+The launcher is not specific to opencode: any client can start `run_mcp.py` by absolute path instead of `-m atelier.mcp_server` with a working directory.
+
+### Desktop application as the MCP server
+
+The macOS application bundles the MCP server, so a separate Python environment or source checkout is not required. Start its executable with `--mcp`; no window opens:
+
+```bash
+opencode mcp add blockatelier --global -- /Applications/BlockAtelier.app/Contents/MacOS/BlockAtelier --mcp
+```
+
+Other clients use the same executable as `command` and `["--mcp"]` as `args`. In this mode the tools use the application's storage in `~/Library/Application Support/BlockAtelier/`, so builds created through MCP appear in the desktop library. Open the application once first to download the rendering profile. See [DESKTOP.md](DESKTOP.md).
+
+### One core for every entry point
+
+The browser application (`run.py`), the desktop window and its `--mcp` mode (`run_desktop.py`), and the source MCP launchers (`run_mcp.py`, `-m atelier.mcp_server`) all run the same `atelier` package. MCP tools call the same pipeline functions as the application: `pipeline.build_from_program` for interpretation and validation, and `pipeline.finalize` for export and library records. A given building program therefore produces the same blocks, report, files, and preview through any of them. `get_build_guide` begins with the core version and whether it runs from source or from the desktop application.
+
+The entry points differ only in where they store data: source launchers use the project-local `workspace/` and `data/` directories, and the desktop application uses its application-support directory. Set `ATELIER_WORKSPACE` and `ATELIER_DATA` to make them share one library and one set of version profiles.
+
 Reload the client after changing its configuration. The `get_build_guide` tool provides a connection check and the supported building-operation format.
 
 | Tool | Function |
@@ -230,6 +274,7 @@ The update utility retrieves version metadata, block properties, blockstates, mo
 | `atelier/server.py` | FastAPI endpoints, background jobs, uploads, and downloads |
 | `atelier/pipeline.py` | Generation, validation, repair, visual review, and export orchestration |
 | `atelier/llm/` | Provider adapters and offline rule-based generation |
+| `run_mcp.py` | MCP server launcher that works from any working directory |
 | `atelier/mcp_server.py` | Local MCP tools |
 | `atelier/dsl.py` | Building-operation interpreter |
 | `atelier/voxel.py` | Sparse voxel storage |
