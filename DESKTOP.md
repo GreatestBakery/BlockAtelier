@@ -19,6 +19,14 @@ The desktop library starts separately from the development checkout. To reuse an
 
 Ollama runs separately on the same computer; select `ollama`, enter a locally installed model identifier, and use `http://localhost:11434/v1`. Blender can be configured in settings; the standard `/Applications/Blender.app` installation is detected when present.
 
+To use opencode as the app's model source, install opencode 2.x and log in to your provider, then select **opencode** in Model and Rendering Settings. Enter `provider/model` or leave the model blank for opencode's default. Set **opencode executable** to its absolute path if needed; standard OpenCode and Homebrew locations are detected even when Finder does not supply a shell PATH. No API key or endpoint is needed in BlockAtelier for this source. The web and desktop interfaces use the same adapter, including reference-image and visual-review support for image-capable models. This model-source option is independent of the MCP server mode below.
+
+## Codex as a model source
+
+Select **codex** in Model and Rendering Settings to use ChatGPT sign-in through a separately installed Codex CLI (0.166.0 or later). First run `codex login` in a terminal and sign in with ChatGPT. Leave the model blank for the CLI's built-in default, or enter an account-supported model identifier. If needed, set **Codex executable** to an absolute path; `~/.local/bin/codex` and the standard Homebrew paths are checked automatically. No API key or endpoint is needed in BlockAtelier. Plan usage limits still apply.
+
+Both the Mac app and web interface use the same adapter for generation, repair, and image-based review. Model calls retain CLI authentication while skipping user CLI configuration and its MCP servers. Existing BlockAtelier MCP server mode is described below and remains available.
+
 ## MCP server mode
 
 The application executable also serves the BlockAtelier MCP tools over stdio, for clients such as opencode, Codex, or Claude Code. No window opens in this mode, and no separate Python installation is needed:

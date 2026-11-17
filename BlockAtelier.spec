@@ -22,7 +22,7 @@ coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='BlockAtel
 app = BUNDLE(coll, name='BlockAtelier.app', icon=str(root / 'desktop.icns'),
     bundle_identifier='com.greatestbakery.blockatelier',
     info_plist={'CFBundleName': 'BlockAtelier', 'CFBundleDisplayName': 'BlockAtelier',
-      'CFBundleShortVersionString': '0.2.0', 'CFBundleVersion': '2',
+      'CFBundleShortVersionString': '0.5.0', 'CFBundleVersion': '5',
       'NSHighResolutionCapable': True, 'LSMinimumSystemVersion': '14.0',
       'NSAppTransportSecurity': {'NSAllowsLocalNetworking': True, 'NSAllowsArbitraryLoads': True},
       'NSHumanReadableCopyright': 'Copyright © 2026 getbake and BlockAtelier contributors'})

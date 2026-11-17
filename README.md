@@ -4,7 +4,7 @@ BlockAtelier is an experimental local application for creating Minecraft Java Ed
 
 Builds can be exported as `.litematic`, Sponge `.schem`, and GLB files. OBJ export with textures is available for external rendering workflows.
 
-Version: **0.2.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
+Version: **0.5.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
 
 ![BlockAtelier interface](examples/ui.jpg)
 
@@ -69,9 +69,25 @@ The **Model and Rendering Settings** panel configures the provider, model identi
 | `qwen` | OpenAI-compatible chat completions | DashScope endpoint preset |
 | `openrouter` | OpenAI-compatible chat completions | OpenRouter endpoint preset |
 | `ollama` | OpenAI-compatible chat completions | Local Ollama endpoint |
+| `opencode` | Local opencode 2.x CLI | Models and credentials configured in opencode |
+| `codex` | Local Codex CLI | ChatGPT sign-in and the plan's Codex allowance |
 | `custom` | OpenAI-compatible chat completions | Custom endpoints, including compatible LM Studio or vLLM servers |
 
 Use a model identifier available to the configured account or local service. Reference images and visual review require a model with image input support. Disable visual processing for text-only models.
+
+### opencode as a model source
+
+In either the web interface or Mac app, select **opencode** in Model and Rendering Settings. Install [opencode 2.x](https://opencode.ai/docs/cli/commands/) separately and complete its provider login first. Enter a model as `provider/model` (optionally `#variant`), or leave it blank to use opencode's default. The **opencode executable** field accepts an absolute path when it is not on PATH; the Mac app also checks `~/.opencode/bin/opencode`, `/opt/homebrew/bin/opencode`, and `/usr/local/bin/opencode`.
+
+This option calls `opencode run --format json` as the model backend for the existing generation, repair, and visual-review pipeline. Reference images are passed as file attachments when vision is enabled. Each call uses a temporary model-only agent with tool permissions disabled. API endpoint and API key fields do not apply; authentication and model settings come from opencode. Token limits and temperature are also managed by opencode. The existing MCP integration below remains available independently.
+
+### Codex with ChatGPT sign-in
+
+In either the web interface or Mac app, select **codex** in Model and Rendering Settings. Install Codex CLI **0.166.0 or later**, run `codex login`, and sign in with your ChatGPT account. This uses your plan's Codex allowance, subject to account/model availability and usage limits; it does not require API credits or an API key in BlockAtelier. See [OpenAI's account and usage guide](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan).
+
+Leave the model field blank for the CLI's built-in default, or enter a model identifier available to your ChatGPT account. The **Codex executable** field accepts an absolute path; the Mac app also checks `~/.local/bin/codex`, `/opt/homebrew/bin/codex`, and `/usr/local/bin/codex` when Finder does not supply a shell PATH. Reference images and visual review require an image-capable model.
+
+The adapter runs `codex exec` in a temporary directory and reads only its final response. Each call is ephemeral, requires ChatGPT sign-in, uses a read-only sandbox, and disables shell, multi-agent, and web-search tools. User `config.toml` is not loaded, so custom providers and MCP servers are not started by these model calls; existing CLI authentication is retained. Model settings such as token limits and temperature use Codex defaults. Existing BlockAtelier MCP, opencode, and HTTP providers remain independent and available.
 
 Configuration is stored in `workspace/config.json`. The following environment variables override nonempty provider settings:
 
