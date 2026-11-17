@@ -4,7 +4,7 @@ BlockAtelier is an experimental local application for creating Minecraft Java Ed
 
 Builds can be exported as `.litematic`, Sponge `.schem`, and GLB files. OBJ export with textures is available for external rendering workflows.
 
-Version: **0.2.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
+Version: **0.3.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
 
 ![BlockAtelier interface](examples/ui.jpg)
 
