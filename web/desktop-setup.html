@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BlockAtelier — Setup</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#121418;color:#e6e8ec;font:16px/1.6 system-ui,sans-serif;padding:32px}.card{max-width:640px;padding:40px;background:#1a1d23;border:1px solid #2e333d;border-radius:16px}h1{margin:0 0 16px;font-size:28px}.muted{color:#9aa3b2}button{border:0;border-radius:7px;padding:12px 18px;background:#7bc47f;color:#0d1a10;font:inherit;font-weight:600;cursor:pointer}button:disabled{opacity:.55;cursor:wait}#status{white-space:pre-wrap;overflow-wrap:anywhere}#status.error{color:#f39a93}
+</style>
+</head>
+<body><main class="card"><h1>BlockAtelier</h1><p id="intro">Set up local rendering data</p><p class="muted" id="detail">On first launch, download the Minecraft Java 1.21.11 profile from misode/mcmeta. Rendering data is stored on this computer; it is not bundled with the app. An internet connection is required for this step.</p><button id="download" disabled>Preparing…</button><p id="status" role="status" aria-live="polite"></p></main>
+<script>
+let chinese=/^zh/i.test(navigator.language),ready=false;
+const button=document.getElementById('download'),status=document.getElementById('status');
+function labels(){document.documentElement.lang=chinese?'zh-CN':'en';document.getElementById('intro').textContent=chinese?'准备本地渲染数据':'Set up local rendering data';document.getElementById('detail').textContent=chinese?'首次启动需要从 misode/mcmeta 下载 Minecraft Java 1.21.11 版本档案。数据仅保存在本机，未随安装包分发；此步骤需要联网。':'On first launch, download the Minecraft Java 1.21.11 profile from misode/mcmeta. Rendering data is stored on this computer; it is not bundled with the app. An internet connection is required for this step.';button.textContent=chinese?'下载并开始':'Download & start';}
+async function initialize(){if(ready||!window.pywebview?.api)return;ready=true;try{const prefs=await window.pywebview.api.get_preferences();if(prefs.language)chinese=prefs.language==='zh-CN';}catch{}labels();button.disabled=false;}
+button.addEventListener('click',async()=>{button.disabled=true;status.className='';status.textContent=chinese?'正在下载并准备渲染数据，请稍候…':'Downloading and preparing rendering data. This may take a moment…';try{await window.pywebview.api.install_resources();}catch(error){status.className='error';status.textContent=(chinese?'下载失败，请检查网络后重试。\n':'Download failed. Check your connection and try again.\n')+error.message;button.disabled=false;}});
+labels();window.addEventListener('pywebviewready',initialize,{once:true});initialize();
+</script></body></html>

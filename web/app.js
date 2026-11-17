@@ -192,7 +192,7 @@ function renderRenders(b, savedOptions = null) {
   if (savedOptions) for (const [id, value] of Object.entries(savedOptions)) { const input = document.getElementById(id); if (input) input.value = value; }
   $('#tab-renders').querySelectorAll('[data-x]').forEach((a) => (a.onclick = async (e) => {
     e.preventDefault();
-    try { const r = await api(`/builds/${b.id}/export/${a.dataset.x}`, { method: 'POST' }); location.href = f(r.file) + '?download=1'; } catch (err) { toast(err.message, true); }
+    try { const r = await api(`/builds/${b.id}/export/${a.dataset.x}`, { method: 'POST' }); await downloadFile(f(r.file) + '?download=1'); } catch (err) { toast(err.message, true); }
   }));
   $('#btn-render').onclick = async () => {
     const body = { width: +$('#r-w').value, height: +$('#r-h').value, samples: +$('#r-s').value, azimuth: +$('#r-az').value, elevation: +$('#r-el').value, views: +$('#r-n').value };
@@ -200,7 +200,7 @@ function renderRenders(b, savedOptions = null) {
   };
   $('#btn-snippet').onclick = async () => {
     const code = await api(`/builds/${b.id}/blender_snippet`);
-    try { await navigator.clipboard.writeText(code); toast(t('已复制。把它交给 Blender MCP 的“执行代码”工具即可在你的 Blender 里渲染。')); } catch { toast(t('复制失败，请在 {url} 手动获取', { url: '/api/builds/' + b.id + '/blender_snippet' }), true); }
+    try { if (window.pywebview?.api?.copy_text) { if (!await window.pywebview.api.copy_text(code)) throw new Error('Clipboard unavailable'); } else { await navigator.clipboard.writeText(code); } toast(t('已复制。把它交给 Blender MCP 的“执行代码”工具即可在你的 Blender 里渲染。')); } catch { toast(t('复制失败，请在 {url} 手动获取', { url: '/api/builds/' + b.id + '/blender_snippet' }), true); }
   };
 }
 
@@ -324,5 +324,42 @@ function refreshLanguage() {
 $('#language').addEventListener('change', event => {
   setLanguage(event.target.value);
   refreshLanguage();
+  window.pywebview?.api?.set_ui_language?.(getLanguage()).catch(error => toast(error.message, true));
 });
 refreshLanguage();
+
+
+async function downloadFile(url) {
+  if (window.pywebview?.api?.save_file) {
+    const result = await window.pywebview.api.save_file(url);
+    if (!result.cancelled) toast(t('已保存到 {path}', { path: result.path }));
+  } else {
+    location.href = url;
+  }
+}
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href]');
+  const desktop = window.pywebview?.api;
+  if (!link || !desktop) return;
+  const url = new URL(link.href, location.href);
+  if (url.origin !== location.origin || !url.pathname.startsWith('/api/builds/')) return;
+  if (url.searchParams.get('download') === '1') {
+    event.preventDefault();
+    downloadFile(url.href).catch(error => toast(error.message, true));
+  } else if (link.target === '_blank' && desktop.open_preview) {
+    event.preventDefault();
+    desktop.open_preview(url.href).catch(error => toast(error.message, true));
+  }
+});
+async function initializeDesktop() {
+  if (!window.pywebview?.api?.get_preferences) return;
+  try {
+    const preferences = await window.pywebview.api.get_preferences();
+    if (preferences.language === 'en' || preferences.language === 'zh-CN') {
+      setLanguage(preferences.language);
+      refreshLanguage();
+    }
+  } catch (error) { toast(error.message, true); }
+}
+window.addEventListener('pywebviewready', initializeDesktop, { once: true });
+if (window.pywebview?.api?.get_preferences) initializeDesktop();

@@ -1,5 +1,6 @@
 // Frontend localization. User-authored content and build JSON are never rewritten.
 const EN = {
+  "已保存到 {path}": "Saved to {path}",
   "方块工坊 BlockAtelier": "BlockAtelier",
   "方块工坊": "BlockAtelier",
   "目标版本": "Target version",

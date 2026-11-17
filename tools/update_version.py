@@ -86,17 +86,17 @@ def first_model(blockstate, defaults):
     return None
 
 
-def main():
+def main(argv=None, output_root=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("version")
     ap.add_argument("--from-dir", default=None, help="本地 mcmeta 镜像 (含 <ver>-summary 等子目录)")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     ver = a.version
     if ver == "latest":
         allv = fetch("summary", "versions/data.min.json", a.from_dir)
         ver = next(v["id"] for v in allv if v["type"] == "release")
         print("最新正式版:", ver)
-    out = ROOT / "data" / "versions" / ver
+    out = Path(output_root or ROOT / "data" / "versions") / ver
     out.mkdir(parents=True, exist_ok=True)
 
     version = fetch(f"{ver}-summary", "version.json", a.from_dir)

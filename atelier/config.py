@@ -2,7 +2,7 @@ import json, os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
+DATA = Path(os.environ.get("ATELIER_DATA", ROOT / "data"))
 VERSIONS = DATA / "versions"
 WORKSPACE = Path(os.environ.get("ATELIER_WORKSPACE", ROOT / "workspace"))
 CONFIG_FILE = WORKSPACE / "config.json"
