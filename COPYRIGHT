@@ -6,6 +6,9 @@ Unless a file carries a different notice, the original source code and
 project documentation are licensed under the GNU General Public License,
 version 3 only. See LICENSE for the complete terms.
 
+The desktop launcher, native integrations, and build scripts are covered
+by the same project source-code license.
+
 Third-party software retains its own copyright and license notices.
 Minecraft assets and user-provided/generated content are outside this
 source-code license grant. See THIRD_PARTY_NOTICES.md.

@@ -4,9 +4,9 @@ BlockAtelier is an experimental local application for creating Minecraft Java Ed
 
 Builds can be exported as `.litematic`, Sponge `.schem`, and GLB files. OBJ export with textures is available for external rendering workflows.
 
-Version: **0.1.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
+Version: **0.2.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
 
-![BlockAtelier interface](examples/ui.png)
+![BlockAtelier interface](examples/ui.jpg)
 
 ## Features
 
@@ -19,6 +19,14 @@ Version: **0.1.0**. The development dataset includes profiles for **Java 26.3** 
 - Organize builds with search, tags, favorites, and revision relationships.
 - Export structure files and meshes, and render through Blender or an external workflow.
 - Expose building, validation, conversion, and rendering functions through a local MCP server.
+
+## Desktop application (macOS)
+
+The Apple Silicon desktop build opens in a standalone macOS window and bundles its Python runtime. It supports the same bilingual interface, local generation, 3D preview, library, native file export, and optional model services. No external browser or separately installed Python is required to run the packaged app.
+
+See [DESKTOP.md](DESKTOP.md) for installation, storage locations, build instructions, and distribution limitations. Ollama and Blender remain optional external applications. The desktop build is ad-hoc signed and has not been notarized. On first launch it downloads the Java 1.21.11 rendering profile to local application storage; the Release archive does not bundle game-derived profiles.
+
+Download the macOS build from [GitHub Releases](https://github.com/GreatestBakery/BlockAtelier/releases/latest).
 
 ## Installation
 
@@ -74,6 +82,7 @@ Configuration is stored in `workspace/config.json`. The following environment va
 | `ATELIER_API_KEY` | API key |
 | `ATELIER_BASE_URL` | API endpoint base URL |
 | `ATELIER_WORKSPACE` | Workspace location instead of the default project-local `workspace/` directory |
+| `ATELIER_DATA` | Optional location for prepared version profiles; desktop mode uses its application-support directory |
 
 API keys saved through the interface are stored in plaintext. Workspace files can also contain uploaded references, request content, and model conversations. Exclude private workspace data from public repositories and shared archives.
 
