@@ -4,7 +4,7 @@ BlockAtelier is an experimental local application for creating Minecraft Java Ed
 
 Builds can be exported as `.litematic`, Sponge `.schem`, and GLB files. OBJ export with textures is available for external rendering workflows.
 
-Version: **0.5.0**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
+Version: **0.5.1**. The development dataset includes profiles for **Java 26.3** (DataVersion 5023) and **1.21.11**. Game-derived version profiles are excluded from this source repository and must be prepared locally. The default configuration selects the latest locally installed profile. Compatibility with a particular game or mod installation requires separate verification.
 
 ![BlockAtelier interface](examples/ui.jpg)
 
@@ -57,6 +57,8 @@ The server binds to `127.0.0.1` by default. It has no authentication and is inte
 The initial configuration uses a local rule-based generator for a small set of building types, including houses, towers, and pavilions. This mode supports offline demonstrations and pipeline checks. It does not provide general-purpose text or image generation.
 
 ## Model configuration
+
+If a model returns invalid JSON, the pipeline asks it once to correct the syntax while preserving the design, original request, size limits, and reference images. A second invalid response stops the stage. This correction does not retry provider errors or explicitly marked truncation.
 
 The **Model and Rendering Settings** panel configures the provider, model identifier, API key, endpoint, visual input support, and rendering options. The interface supports **English** and **Simplified Chinese**. Use the language selector in the header to switch instantly. The initial language follows the browser preference, and an explicit selection is saved in local browser storage. Switching languages preserves form entries, selected versions, unsaved settings, and render options. User-authored descriptions, build titles, and building-program JSON retain their original text.
 

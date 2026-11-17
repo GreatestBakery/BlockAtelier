@@ -105,11 +105,22 @@ def run(request, cfg, emit=lambda *a, **k: None, build_id=None):
     log = []
 
     def ask(system, text, task, images=None):
-        t = time.time()
-        out = client.chat(system, [{"role": "user", "text": text, "images": images or []}], task=task)
-        log.append({"task": task, "seconds": round(time.time() - t, 1), "prompt_chars": len(text), "reply": out})
-        (d / "llm_log.json").write_text(json.dumps(log, ensure_ascii=False, indent=1), "utf-8")
-        return extract_json(out)
+        messages = [{"role": "user", "text": text, "images": images or []}]
+        for attempt in range(2):
+            t = time.time()
+            out = client.chat(system, messages, task=task)
+            log.append({"task": task, "seconds": round(time.time() - t, 1), "prompt_chars": sum(len(m["text"]) for m in messages), "reply": out})
+            (d / "llm_log.json").write_text(json.dumps(log, ensure_ascii=False, indent=1), "utf-8")
+            try:
+                return extract_json(out)
+            except LLMError as error:
+                if attempt or "/*TRUNCATED*/" in out:
+                    raise
+                emit(task, "run", "模型返回的 JSON 格式有误，正在请求修正…")
+                messages += [{"role": "assistant", "text": out}, {"role": "user", "text":
+                    f"Your previous response is not valid JSON: {error}\n"
+                    "Correct the JSON syntax without redesigning the build or changing the original requirements. "
+                    "Return the complete JSON object."}]
 
     title, program, brief, grid, report = prompt[:24] or "未命名", None, None, None, None
 

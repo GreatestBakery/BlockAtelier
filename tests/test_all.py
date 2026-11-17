@@ -239,6 +239,54 @@ def test_pipeline_repair_loop():
     assert rec["blocks"] == 100 and not rec["report"]["errors"]
 
 
+@pytest.mark.parametrize("stage", ["brief", "program"])
+def test_pipeline_json_correction(monkeypatch, stage):
+    calls, events = [], []
+    bad = {"brief": '{"title":"test","size":[26, thirty, 26]}',
+           "program": '{"ops":[{"op":"box","from":[0,0,0],"to":[4, three,4],"block":"stone"}]}'}
+    good = {"brief": '{"title":"test","size":[26,30,26]}',
+            "program": '{"ops":[{"op":"box","from":[0,0,0],"to":[4,3,4],"block":"stone"}]}'}
+
+    class Client:
+        def chat(self, system, messages, task=None):
+            calls.append((task, list(messages)))
+            if task == stage:
+                if len(messages) == 1:
+                    return bad[task]
+                assert messages[0]["images"] == [b"reference"]
+                assert "MAX_SIZE = [32, 64, 32]" in messages[0]["text"]
+                assert messages[1] == {"role": "assistant", "text": bad[task]}
+                assert "not valid JSON" in messages[2]["text"]
+            return good[task]
+
+    monkeypatch.setattr(pipeline, "make_client", lambda cfg: Client())
+    monkeypatch.setattr(pipeline.references, "gather", lambda *a: {"structures": [], "images": [b"reference"], "text": ""})
+    rec = pipeline.run({"prompt": "test", "max_size": [32, 64, 32]},
+                       {**config.load_config(), "critique_rounds": 0}, lambda *a: events.append(a))
+    assert rec["blocks"] == 100
+    assert [task for task, _ in calls].count(stage) == 2
+    assert any("JSON" in event[2] for event in events)
+    log = json.loads((store.build_dir(rec["id"]) / "llm_log.json").read_text())
+    assert [entry["reply"] for entry in log if entry["task"] == stage] == [bad[stage], good[stage]]
+
+
+@pytest.mark.parametrize("reply,count", [('{"size":[26,thirty,26]}', 2), ('{"size":[/*TRUNCATED*/', 1), (None, 1)])
+def test_pipeline_json_correction_is_bounded(monkeypatch, reply, count):
+    calls = []
+
+    class Client:
+        def chat(self, system, messages, task=None):
+            calls.append(task)
+            if reply is None:
+                raise LLMError("provider usage limit")
+            return reply
+
+    monkeypatch.setattr(pipeline, "make_client", lambda cfg: Client())
+    with pytest.raises(LLMError):
+        pipeline.run({"prompt": "test"}, config.load_config())
+    assert len(calls) == count
+
+
 def test_pipeline_model_and_library(tmp_path):
     rec = pipeline.run({"mode": "model", "model_path": str(ROOT / "examples" / "tower.obj"), "voxel": {"size": 24}}, config.load_config())
     assert rec["mode"] == "model" and max(rec["size"]) == 24

@@ -178,6 +178,7 @@ const EN = {
   "让模型按文字描述调整材质…": "Remapping materials from the description…",
   "整理参考资料…": "Preparing references…",
   "分析需求、定设计方案…": "Analyzing requirements and preparing the design…",
+  "模型返回的 JSON 格式有误，正在请求修正…": "The model returned invalid JSON; requesting a correction…",
   "生成建筑指令…": "Generating the build program…",
   "渲染预览并让模型看图自评…": "Rendering previews for visual review…",
   "导出 .litematic / .schem / 3D 预览…": "Exporting .litematic / .schem / 3D previews…",
