@@ -1,10 +1,4 @@
-"""参考资料检索。三个来源，可靠性从高到低:
-  1) 本地参考库: 你自己收集的 .litematic/.schem/.nbt (解析成尺寸+用料摘要) 和图片 (直接给视觉模型看)
-  2) 用户本次上传的图片
-  3) 联网搜索 (可选, 自建 SearXNG): 只取标题/摘要/链接作为文字线索
-批判性说明: Planet Minecraft 之类的站点没有公开 API、且有反爬，自动下载别人的结构文件既不稳定也不该默认做；
-所以“找类似的已有建筑”在本软件里落在本地参考库上 —— 你下载、你放进去，软件负责解析和匹配。
-"""
+"""Summarize local reference structures and retrieve optional web references."""
 import json, re, urllib.parse, urllib.request
 from . import store, config
 

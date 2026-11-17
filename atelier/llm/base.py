@@ -1,11 +1,4 @@
-"""大模型适配层。上层只调用 client.chat(system, messages, task=...) -> str。
-
-messages: [{"role": "user"|"assistant", "text": str, "images": [png/jpeg bytes, ...]}]
-两种线协议覆盖了几乎所有主流模型:
-  - anthropic : Claude 的 Messages API
-  - openai    : /chat/completions (OpenAI、Gemini 兼容端点、DeepSeek、通义、OpenRouter、Ollama、LM Studio、各种中转)
-只用标准库 urllib，不绑任何厂商 SDK，换模型只改配置。
-"""
+"""HTTP model adapters, response parsing, and JSON extraction."""
 import base64, json, re, urllib.request, urllib.error
 
 

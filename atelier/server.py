@@ -1,4 +1,4 @@
-"""本地 Web 服务: REST API + 静态前端。只监听 127.0.0.1。"""
+"""Local FastAPI service for build jobs, uploads, library records, and exports."""
 import json, re, shutil, threading, time, traceback, uuid
 from pathlib import Path
 from typing import Optional

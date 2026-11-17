@@ -1,4 +1,4 @@
-"""作品库: 每个作品一个文件夹 (所有产物都是普通文件，可直接拷走)，SQLite 只做索引和检索。"""
+"""File-based build storage and a SQLite index for search, tags, and revisions."""
 import json, shutil, sqlite3, time, uuid
 from contextlib import contextmanager
 from pathlib import Path

@@ -1,5 +1,4 @@
-"""自检套件:  python -m pytest tests -q
-全部离线可跑 (大模型接口用本地假服务器验证请求/响应格式)。"""
+"""Offline geometry, format, model-protocol, pipeline, and library regression tests."""
 import json, math, os, tempfile, threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path

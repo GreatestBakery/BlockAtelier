@@ -1,5 +1,4 @@
-"""生成流水线: 输入整理 -> 需求分析 -> 找参考 -> 生成指令 -> 执行+校验(+修复) -> 预览渲染(+看图自评) -> 导出 -> 入库。
-每一步都通过 emit(stage, status, message, data) 汇报，前端据此画时间线；每一步的中间产物都落盘，便于复盘。"""
+"""Coordinate design, building programs, validation, revisions, previews, and export."""
 import json, time, traceback
 from pathlib import Path
 from . import store, references

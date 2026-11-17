@@ -1,5 +1,4 @@
-"""离线“假模型”: 一个很小的规则引擎，按关键词出塔/亭/屋三种原型。
-它存在的意义是让整条流水线在没有 API key 的情况下也能端到端跑通和自测，不代表真实模型的质量。"""
+"""Offline rule-based building examples for demonstrations and tests."""
 import json, re
 
 

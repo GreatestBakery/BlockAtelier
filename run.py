@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""启动 BlockAtelier:  python run.py  [--port 8765] [--no-browser]"""
+"""Launch the local browser application with configurable host and port."""
 import argparse, threading, webbrowser
 import uvicorn
 
