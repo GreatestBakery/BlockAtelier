@@ -1,10 +1,4 @@
-"""在 Blender 里渲染成品图。三种跑法，同一份代码:
-  1) 命令行:   blender -b -P blender_job.py -- --glb build.glb --out render.png
-  2) pip 装的 bpy 模块:  python blender_job.py -- --glb ... --out ...
-  3) Blender MCP:  把本文件源码 + 一行 render_build({...}) 交给 execute_blender_code (见 external.blender_mcp_snippet)
-导入后材质是标准 Principled BSDF + 图集贴图；想换材质包/加 PBR/动画贴图，可在 Blender 里用 MCprep 的 Prep Materials 接手
-(OBJ 导出按贴图分材质，名字与 MCprep 识别的命名一致)。
-"""
+"""Import exported meshes and render framed Blender scenes."""
 import math, sys
 
 DEFAULTS = {"glb": "", "out": "render.png", "engine": "CYCLES", "samples": 64, "width": 1600, "height": 1200,

@@ -1,5 +1,4 @@
-"""内置软件渲染 (无 GPU、无外部依赖): 2:1 等轴测，画家算法。用于缩略图和给视觉模型“看一眼”做自检。
-这不是成品图，成品图走 Blender (render/blender_job.py)。"""
+"""Flat-color isometric previews and four-angle contact sheets."""
 import numpy as np
 from PIL import Image, ImageDraw
 from ..blocks import parse_state

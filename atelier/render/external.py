@@ -1,9 +1,4 @@
-"""外部渲染器接口。
-- Blender: 已打通 (命令行 / bpy 模块 / Blender MCP 三种方式)，是成品图的主路线。
-- 基于“存档”的工具 (Chunky 路径追踪、Mineways -> OBJ -> MCprep): 它们读的是世界存档而不是结构文件，
-  所以需要先把结构贴进一个世界 (WorldEdit //schem load + //paste，或 Litematica 粘贴)。本软件不伪造存档，
-  这里只提供把现成命令串起来的入口；更省事的等价路线是直接用我们导出的 OBJ (材质命名兼容 MCprep)。
-"""
+"""Discover Blender and prepare local rendering or external-tool commands."""
 import importlib.util, shutil, subprocess, sys
 from pathlib import Path
 
