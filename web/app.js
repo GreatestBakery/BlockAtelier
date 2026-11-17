@@ -253,12 +253,16 @@ $('#btn-iterate').onclick = () => {
 function updateProviderSettings() {
   const provider = $('#cfg-provider').value, p = state.meta.presets[provider];
   const opencode = provider === 'opencode';
+  const codex = provider === 'codex', cli = opencode || codex;
   $('#cfg-opencode-row').hidden = !opencode;
-  $('#cfg-base').closest('label').hidden = opencode;
-  $('#cfg-key').closest('label').hidden = opencode;
-  $('#cfg-model').placeholder = t(opencode ? 'provider/model，留空使用 opencode 默认模型' : '填你账号里可用的模型名');
+  $('#cfg-codex-row').hidden = !codex;
+  $('#cfg-base').closest('label').hidden = cli;
+  $('#cfg-key').closest('label').hidden = cli;
+  $('#cfg-model').placeholder = t(codex ? '留空使用 Codex 默认模型' : opencode ? 'provider/model，留空使用 opencode 默认模型' : '填你账号里可用的模型名');
   $('#cfg-base').placeholder = p.base_url || t('必填');
-  $('#cfg-note').textContent = t(opencode
+  $('#cfg-note').textContent = t(codex
+    ? '需安装 Codex CLI 0.166.0 或更新版本，先运行 codex login 并使用 ChatGPT 账号登录。使用套餐中的 Codex 额度，无需 API Key，仍受套餐用量限制。'
+    : opencode
     ? '需安装 opencode 2.x 并先完成模型登录。使用 opencode 的模型配置，无需在这里填写 API Key。'
     : 'Key 只保存在本机 workspace/config.json；也可以用环境变量 ATELIER_API_KEY。');
 }
@@ -270,7 +274,7 @@ function applyMeta(m, preserve = false) {
   $('#vox-palette').innerHTML = m.palettes.map((p) => `<option value="${p}">${{ all: t('全部实心方块'), color: t('混凝土 + 羊毛 + 陶瓦'), concrete: t('仅混凝土'), wool: t('仅羊毛'), terracotta: t('仅陶瓦'), stone: t('石质'), wood: t('木板') }[p]}</option>`).join('');
   if (preserve) $('#vox-palette').value = palette;
   const c = m.config, badge = $('#provider-badge');
-  badge.textContent = c.provider === 'mock' ? t('离线模拟（未接入模型）') : `${c.provider} · ${c.model || t(c.provider === 'opencode' ? 'opencode 默认模型' : '未填模型名')}`;
+  badge.textContent = c.provider === 'mock' ? t('离线模拟（未接入模型）') : `${c.provider} · ${c.model || t(c.provider === 'codex' ? 'Codex 默认模型' : c.provider === 'opencode' ? 'opencode 默认模型' : '未填模型名')}`;
   badge.className = 'badge' + (c.provider === 'mock' ? ' mock' : '');
 }
 $('#btn-settings').onclick = () => {
@@ -278,6 +282,7 @@ $('#btn-settings').onclick = () => {
   $('#cfg-provider').innerHTML = Object.entries(m.presets).map(([k, p]) => `<option value="${k}">${k} — ${esc(t(p.note))}</option>`).join('');
   $('#cfg-provider').value = c.provider; $('#cfg-model').value = c.model; $('#cfg-base').value = c.base_url; $('#cfg-key').value = '';
   $('#cfg-opencode').value = c.opencode_path;
+  $('#cfg-codex').value = c.codex_path;
   $('#cfg-key-hint').textContent = c.has_key ? t('已保存') : t('未设置');
   $('#cfg-repair').value = c.repair_rounds; $('#cfg-critique').value = c.critique_rounds; $('#cfg-vision').checked = c.vision;
   $('#cfg-searx').value = c.searxng_url; $('#cfg-blender').value = c.blender_path;
@@ -291,6 +296,7 @@ $('#cfg-save').onclick = async (e) => {
     applyMeta(await api('/config', { method: 'POST', json: {
       provider: $('#cfg-provider').value, model: $('#cfg-model').value.trim(), base_url: $('#cfg-base').value.trim(), api_key: $('#cfg-key').value,
       opencode_path: $('#cfg-opencode').value.trim() || 'opencode',
+      codex_path: $('#cfg-codex').value.trim() || 'codex',
       repair_rounds: +$('#cfg-repair').value, critique_rounds: +$('#cfg-critique').value, vision: $('#cfg-vision').checked,
       searxng_url: $('#cfg-searx').value.trim(), blender_path: $('#cfg-blender').value.trim() || 'blender' } }));
     $('#dlg-settings').close(); toast(t('已保存'));
